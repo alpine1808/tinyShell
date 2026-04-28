@@ -10,6 +10,7 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <string.h>
+#include <stdio.h>
 
 using namespace std;
 
@@ -46,6 +47,7 @@ void startProcess(const string& cmdStr, bool isBackground) {
             setpgid(0, 0);
         }
         execvp(c_args[0], c_args.data());
+        perror("execvp");
         exit(EXIT_FAILURE);
     } else {
         if (isBackground) {

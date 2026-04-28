@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <string.h>
+#include <stdio.h>
 
 using namespace std;
 
@@ -38,6 +39,7 @@ void ProcessExecutor::execute(const Command& cmd, ProcessManager& procManager) {
             setpgid(0, 0);
         }
         execvp(c_args[0], c_args.data());
+        perror("execvp");
         exit(EXIT_FAILURE);
     } else {
         if (cmd.isBackground) {
