@@ -38,9 +38,8 @@ pid_t CtrlCHandler::getForegroundProcessPid() {
 void CtrlCHandler::handleSignal(int signum) {
     if (signum == SIGINT) {
         if (currentForegroundProcessPid != -1) {
-            log(INFO, "Terminating process group: " + std::to_string(currentForegroundProcessPid));
-            kill(-currentForegroundProcessPid, SIGINT);
-            resetForegroundProcess();
+            log(INFO, "Terminating process: " + std::to_string(currentForegroundProcessPid));
+            kill(currentForegroundProcessPid, SIGINT);
             std::cout << std::endl;
         } else {
             std::cout << "^C\n";
