@@ -2,6 +2,7 @@
 #include "process_manager.h"
 #include "logger.h"
 #include "ctrl_c_handler.h"
+#include "path.h"
 #include <string>
 #include <iostream>
 #include <vector>
@@ -30,6 +31,16 @@ void ProcessExecutor::execute(const Command& cmd, ProcessManager& procManager) {
     }
     c_args.push_back(nullptr);
 
+    string executablePath = cmd.program;
+    
+    for (const auto& dir : PathManager::getTinyShellPath()) {
+        string testPath = dir + "/" + cmd.program;
+        if (access(testPath.c_str(), X_OK) == 0) {
+            executablePath = testPath;
+            break;
+        }
+    }
+
     pid_t pid = fork();
 
     if (pid < 0) {
@@ -38,7 +49,7 @@ void ProcessExecutor::execute(const Command& cmd, ProcessManager& procManager) {
         if (cmd.isBackground) {
             setpgid(0, 0);
         }
-        execvp(c_args[0], c_args.data());
+        execvp(executablePath.c_str(), c_args.data());
         perror("execvp");
         exit(EXIT_FAILURE);
     } else {

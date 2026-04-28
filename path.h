@@ -8,6 +8,9 @@ namespace fs = std::filesystem;
 class PathManager {
 public:
     static void executeCommand(const Command& cmd);
+    static const std::vector<std::string>& getTinyShellPath() {
+        return tinyShellPath;
+    }
 
 private:
     static std::vector<std::string> tinyShellPath; 
