@@ -3,7 +3,8 @@
 #include <vector>
 #include <filesystem>
 #include "builtins.h"
-#include "commandParser.h" // 1. Tích hợp header của Parser
+#include "commandParser.h"
+#include "path.h" // Thêm header mới
 
 namespace fs = std::filesystem;
 using namespace std;
@@ -24,13 +25,27 @@ int main() {
         Command cmd = CommandParser::parse(input);
 
         if (!cmd.program.empty()) {
+            // Chuyển đổi sang định dạng vector<string> để tương thích với handle_builtin cũ
             vector<string> fullArgs;
             fullArgs.push_back(cmd.program);
             fullArgs.insert(fullArgs.end(), cmd.args.begin(), cmd.args.end());
 
-            bool isBuiltin = handle_builtin(fullArgs);
+            // Biến cờ để kiểm tra lệnh đã được xử lý chưa
+            bool isHandled = false;
+
+            // BƯỚC 1: Kiểm tra các lệnh built-in (cd, exit, echo, alias...)
+            isHandled = handle_builtin(fullArgs);
             
-            if (!isBuiltin) {
+            // BƯỚC 2: Nếu chưa xử lý, kiểm tra các lệnh thuộc PathManager (path, pwd)
+            if (!isHandled) {
+                if (cmd.program == "path" || cmd.program == "pwd") {
+                    PathManager::executeCommand(cmd);
+                    isHandled = true;
+                }
+            }
+
+            // BƯỚC 3: Nếu vẫn chưa xử lý, báo lỗi hoặc chạy nền
+            if (!isHandled) {
                 if (cmd.isBackground) {
                     cout << "[Thông tin] Lệnh '" << cmd.program << "' được yêu cầu chạy nền.\n";
                 }
