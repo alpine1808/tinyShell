@@ -1,4 +1,5 @@
 #include "builtins.h"
+#include "environment.h"
 #include <iostream>
 #include <vector>
 #include <sstream>
@@ -9,6 +10,28 @@ namespace fs = std::filesystem;
 using namespace std;
 
 static map<string,string> aliases;
+
+void builtin_export(const vector<string>& args) {
+    if (args.size() == 1) {
+        Environment::printVars();
+        return;
+    }
+    
+    string input = args[1];
+    for (size_t i = 2; i < args.size(); ++i) {
+        input += " " + args[i];
+    }
+    
+    auto pos = input.find('=');
+    if (pos == string::npos) {
+        cerr << "Invalid export format. Use export VAR=value\n";
+        return;
+    }
+    
+    string key = input.substr(0, pos);
+    string value = input.substr(pos + 1);
+    Environment::setVar(key, value);
+}
 
 void builtin_cd(const vector<string>& args) {
     if (args.size() < 2) {
@@ -193,6 +216,14 @@ string resolve_alias(string_view name) {
     return aliases[string(name)];
 }
 
+void builtin_unset(const vector<string>& args) {
+    if (args.size() < 2) {
+        cerr << "Usage: unset VAR\n";
+        return;
+    }
+    Environment::unsetVar(args[1]);
+}
+
 bool handle_builtin(vector<string>& args) {
     if (args.empty()) return false;
     string cmd = args[0];
@@ -204,6 +235,12 @@ bool handle_builtin(vector<string>& args) {
         return true;
     } else if (cmd == "unalias") {
         builtin_unalias(args);
+        return true;
+    } else if (cmd == "export") {
+        builtin_export(args);
+        return true;
+    } else if (cmd == "unset") {
+        builtin_unset(args);
         return true;
     } else if (cmd == "help") {
         builtin_help();

@@ -241,15 +241,27 @@ bool ProcessManager::handleCommand(const Command& cmd) {
         return true;
     }    
     if (cmd.program == "kill" && !cmd.args.empty()) {
-        killProcess(stoi(cmd.args[0]));
+        for (const auto& arg : cmd.args) {
+            try {
+                killProcess(stoi(arg));
+            } catch (const invalid_argument&) {}
+        }
         return true;
     }
     if (cmd.program == "stop" && !cmd.args.empty()) {
-        stopProcess(stoi(cmd.args[0]));
+        for (const auto& arg : cmd.args) {
+            try {
+                stopProcess(stoi(arg));
+            } catch (const invalid_argument&) {}
+        }
         return true;
     }    
     if (cmd.program == "resume" && !cmd.args.empty()) {
-        resumeProcess(stoi(cmd.args[0]));
+        for (const auto& arg : cmd.args) {
+            try {
+                resumeProcess(stoi(arg));
+            } catch (const invalid_argument&) {}
+        }
         return true;
     }    
     if (cmd.program == "history") {

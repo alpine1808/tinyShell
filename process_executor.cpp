@@ -3,6 +3,8 @@
 #include "logger.h"
 #include "ctrl_c_handler.h"
 #include "path.h"
+#include "builtins.h"
+#include "file_manager.h"
 #include <string>
 #include <iostream>
 #include <vector>
@@ -46,6 +48,36 @@ void ProcessExecutor::executePipeline(const vector<Command>& pipeline, ProcessMa
                 dup2(pipefd[1], STDOUT_FILENO);
                 close(pipefd[1]);
                 close(pipefd[0]);
+            }
+
+            vector<string> fullArgs;
+            fullArgs.push_back(pipeline[i].program);
+            fullArgs.insert(fullArgs.end(), pipeline[i].args.begin(), pipeline[i].args.end());
+
+            bool isHandled = handle_builtin(fullArgs);
+
+            if (!isHandled) {
+                if (pipeline[i].program == "path" || pipeline[i].program == "pwd") {
+                    PathManager::executeCommand(pipeline[i]);
+                    isHandled = true;
+                }
+            }
+
+            if (!isHandled) {
+                if (pipeline[i].program == "ls" || pipeline[i].program == "dir" || pipeline[i].program == "mkdir" ||
+                    pipeline[i].program == "rm" || pipeline[i].program == "mv" || pipeline[i].program == "cp" ||
+                    pipeline[i].program == "touch" || pipeline[i].program == "write" || pipeline[i].program == "read") {
+                    FileManager::executeCommand(pipeline[i]);
+                    isHandled = true;
+                }
+            }
+
+            if (!isHandled) {
+                isHandled = procManager.handleCommand(pipeline[i]);
+            }
+
+            if (isHandled) {
+                exit(EXIT_SUCCESS);
             }
 
             vector<string> args;

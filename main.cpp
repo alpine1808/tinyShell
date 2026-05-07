@@ -12,6 +12,7 @@
 #include "history.h"
 #include "process_manager.h"
 #include "process_executor.h"
+#include "environment.h"
 
 namespace fs = std::filesystem;
 using namespace std;
@@ -19,7 +20,7 @@ using namespace std;
 void processLine(const string& input, ProcessManager& procManager) {
     if (input.empty()) return;
 
-    vector<Command> pipeline = CommandParser::parsePipeline(input);
+    vector<Command> pipeline = CommandParser::parsePipeline(input, procManager);
     if (pipeline.empty()) return;
 
     if (pipeline.size() == 1) {
@@ -61,7 +62,15 @@ void processLine(const string& input, ProcessManager& procManager) {
     }
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[], char* envp[]) {
+    for (char **env = envp; *env != 0; env++) {
+        string envStr = *env;
+        auto pos = envStr.find('=');
+        if (pos != string::npos) {
+            Environment::setVar(envStr.substr(0, pos), envStr.substr(pos + 1));
+        }
+    }
+
     printInitialBanner();
     CtrlCHandler::initialize();
     ProcessManager procManager;

@@ -1,6 +1,9 @@
 #pragma once
-#include<string>
-#include<vector>
+#include <string>
+#include <vector>
+
+class ProcessManager; 
+
 using namespace std;
 
 struct Command{
@@ -11,8 +14,9 @@ struct Command{
 
 class CommandParser{
 private:
-    static Command parseSingle(const string& input);
+    static string expandVariables(const string& input, ProcessManager& procManager);
+    static Command parseSingle(const string& input, ProcessManager& procManager);
 
 public:
-    static vector<Command> parsePipeline(const string& input);
+    static vector<Command> parsePipeline(const string& input, ProcessManager& procManager);
 };

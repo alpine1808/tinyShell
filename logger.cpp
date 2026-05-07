@@ -15,42 +15,38 @@ namespace Color {
 void log(LogLevel level, const std::string& message) {
     static bool needNewline = false;
     if (needNewline) {
-        std::cout << "\n"; 
+        std::cerr << "\n"; 
         needNewline = false;
     }
     
     switch(level) {
         case INFO:
-            std::cout << Color::BOLD << Color::BLUE << "[INFO] " << Color::RESET;
+            std::cerr << Color::BOLD << Color::BLUE << "[INFO] " << Color::RESET;
             break;
         case LOG_ERROR:
-            std::cout << Color::BOLD << Color::RED << "[ERROR] " << Color::RESET;
+            std::cerr << Color::BOLD << Color::RED << "[ERROR] " << Color::RESET;
             break;
         case WARN:
-            std::cout << Color::BOLD << Color::YELLOW << "[WARN] " << Color::RESET;
+            std::cerr << Color::BOLD << Color::YELLOW << "[WARN] " << Color::RESET;
             break;
         case SUCCESS:
-            std::cout << Color::BOLD << Color::GREEN << "[SUCCESS] " << Color::RESET;
+            std::cerr << Color::BOLD << Color::GREEN << "[SUCCESS] " << Color::RESET;
             break;
         case PROCESS:
-            std::cout << Color::BOLD << Color::CYAN << "[PROCESS] " << Color::RESET;
+            std::cerr << Color::BOLD << Color::CYAN << "[PROCESS] " << Color::RESET;
             break;
     }
 
-    std::cout << message << std::endl;
+    std::cerr << message << std::endl;
 }
 
 void printInitialBanner() {
     pid_t pid = getpid(); 
 
-    std::cout << Color::BOLD << Color::GREEN;
-    std::cout << "=====================================\n";
-    std::cout << "        Welcome to manhShell         \n";
-    std::cout << "       Your tiny command shell       \n";
-    std::cout << "=====================================\n";
-    std::cout << Color::RESET;
-
-    std::cout << "Welcome to Tiny Shell!\n";
-    std::cout << "Process ID of Tiny Shell: " << pid << "\n";
-    std::cout << "Type 'help' to see available commands.\n";
+    std::cerr << Color::BOLD << Color::GREEN;
+    std::cerr << "=====================================\n";
+    std::cerr << "        Welcome to manhShell         \n";
+    std::cerr << "       Your tiny command shell       \n";
+    std::cerr << "=====================================\n";
+    std::cerr << Color::RESET;
 }
