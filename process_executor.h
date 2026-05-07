@@ -5,5 +5,5 @@
 
 class ProcessExecutor {
 public:
-    static void execute(const Command& cmd, ProcessManager& procManager);
+    static void executePipeline(const vector<Command>& pipeline, ProcessManager& procManager);
 };

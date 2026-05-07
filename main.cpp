@@ -19,9 +19,13 @@ using namespace std;
 void processLine(const string& input, ProcessManager& procManager) {
     if (input.empty()) return;
 
-    Command cmd = CommandParser::parse(input);
+    vector<Command> pipeline = CommandParser::parsePipeline(input);
+    if (pipeline.empty()) return;
 
-    if (!cmd.program.empty()) {
+    if (pipeline.size() == 1) {
+        Command& cmd = pipeline[0];
+        if (cmd.program.empty()) return;
+
         vector<string> fullArgs;
         fullArgs.push_back(cmd.program);
         fullArgs.insert(fullArgs.end(), cmd.args.begin(), cmd.args.end());
@@ -50,8 +54,10 @@ void processLine(const string& input, ProcessManager& procManager) {
         }
 
         if (!isHandled) {
-            ProcessExecutor::execute(cmd, procManager);
+            ProcessExecutor::executePipeline(pipeline, procManager);
         }
+    } else {
+        ProcessExecutor::executePipeline(pipeline, procManager);
     }
 }
 

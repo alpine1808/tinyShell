@@ -13,67 +13,93 @@
 
 using namespace std;
 
-void ProcessExecutor::execute(const Command& cmd, ProcessManager& procManager) {
-    string fullCmd = cmd.program;
-    for (const auto& arg : cmd.args) {
-        fullCmd += " " + arg;
-    }
+void ProcessExecutor::executePipeline(const vector<Command>& pipeline, ProcessManager& procManager) {
+    int numCmds = pipeline.size();
+    int prevReadFd = -1;
+    vector<pid_t> pids;
+    bool isBackground = pipeline.back().isBackground;
 
-    vector<string> args;
-    args.push_back(cmd.program);
-    for (const auto& arg : cmd.args) {
-        args.push_back(arg);
-    }
-
-    vector<char*> c_args;
-    for (auto& a : args) {
-        c_args.push_back(&a[0]);
-    }
-    c_args.push_back(nullptr);
-
-    string executablePath = cmd.program;
-    
-    for (const auto& dir : PathManager::getTinyShellPath()) {
-        string testPath = dir + "/" + cmd.program;
-        if (access(testPath.c_str(), X_OK) == 0) {
-            executablePath = testPath;
-            break;
-        }
-    }
-
-    pid_t pid = fork();
-
-    if (pid < 0) {
-        log(LOG_ERROR, "Failed to start process: " + fullCmd);
-    } else if (pid == 0) {
-        if (cmd.isBackground) {
-            setpgid(0, 0);
-        }
-        execvp(executablePath.c_str(), c_args.data());
-        perror("execvp");
-        exit(EXIT_FAILURE);
-    } else {
-        if (cmd.isBackground) {
-            procManager.addProcess(pid, fullCmd);
-            log(INFO, "Started background process with PID: " + to_string(pid) +
-                      ", Command: " + fullCmd);
-        } else {
-            CtrlCHandler::setForegroundProcess(pid);
-            
-            int status;
-            waitpid(pid, &status, WUNTRACED);
-            
-            if (WIFEXITED(status)) {
-                int exitCode = WEXITSTATUS(status);
-                if (exitCode != 0) {
-                    log(INFO, "Process exited with code: " + to_string(exitCode));
-                }
-            } else if (WIFSIGNALED(status)) {
-                log(INFO, "Process terminated by signal: " + to_string(WTERMSIG(status)));
+    for (int i = 0; i < numCmds; ++i) {
+        int pipefd[2];
+        if (i < numCmds - 1) {
+            if (pipe(pipefd) == -1) {
+                return;
             }
-            
-            CtrlCHandler::resetForegroundProcess();
-            cout << endl;
         }
+
+        pid_t pid = fork();
+        if (pid < 0) {
+            return;
+        }
+
+        if (pid == 0) {
+            if (isBackground) {
+                setpgid(0, 0);
+            }
+
+            if (i > 0) {
+                dup2(prevReadFd, STDIN_FILENO);
+                close(prevReadFd);
+            }
+
+            if (i < numCmds - 1) {
+                dup2(pipefd[1], STDOUT_FILENO);
+                close(pipefd[1]);
+                close(pipefd[0]);
+            }
+
+            vector<string> args;
+            args.push_back(pipeline[i].program);
+            for (const auto& arg : pipeline[i].args) {
+                args.push_back(arg);
+            }
+
+            vector<char*> c_args;
+            for (auto& a : args) {
+                c_args.push_back(&a[0]);
+            }
+            c_args.push_back(nullptr);
+
+            string executablePath = pipeline[i].program;
+            for (const auto& dir : PathManager::getTinyShellPath()) {
+                string testPath = dir + "/" + pipeline[i].program;
+                if (access(testPath.c_str(), X_OK) == 0) {
+                    executablePath = testPath;
+                    break;
+                }
+            }
+
+            execvp(executablePath.c_str(), c_args.data());
+            exit(EXIT_FAILURE);
+        } else {
+            pids.push_back(pid);
+
+            if (i > 0) {
+                close(prevReadFd);
+            }
+
+            if (i < numCmds - 1) {
+                close(pipefd[1]);
+                prevReadFd = pipefd[0];
+            }
+        }
+    }
+
+    if (isBackground) {
+        string fullCmd = "";
+        for(int i = 0; i < numCmds; i++) {
+            fullCmd += pipeline[i].program;
+            for(auto& a : pipeline[i].args) fullCmd += " " + a;
+            if (i < numCmds - 1) fullCmd += " | ";
+        }
+        procManager.addProcess(pids.back(), fullCmd); 
+    } else {
+        CtrlCHandler::setForegroundProcess(pids.back());
+        for (pid_t p : pids) {
+            int status;
+            waitpid(p, &status, WUNTRACED);
+        }
+        CtrlCHandler::resetForegroundProcess();
+        cout << endl;
     }
 }

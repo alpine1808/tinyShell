@@ -10,6 +10,9 @@ struct Command{
 };
 
 class CommandParser{
+private:
+    static Command parseSingle(const string& input);
+
 public:
-    static Command parse(const string& input);
+    static vector<Command> parsePipeline(const string& input);
 };
