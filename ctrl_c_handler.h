@@ -13,7 +13,7 @@ public:
 
 private:
     static void handleSignal(int signum);
-    static pid_t currentForegroundProcessPid;
+    static volatile pid_t currentForegroundProcessPid;
 };
 
 #endif

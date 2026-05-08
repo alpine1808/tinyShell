@@ -5,7 +5,7 @@
 #include <signal.h>
 #include <unistd.h>
 
-pid_t CtrlCHandler::currentForegroundProcessPid = -1;
+volatile pid_t CtrlCHandler::currentForegroundProcessPid = -1;
 
 void CtrlCHandler::initialize() {
     struct sigaction sa;

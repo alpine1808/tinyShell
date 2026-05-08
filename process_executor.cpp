@@ -25,12 +25,15 @@ void ProcessExecutor::executePipeline(const vector<Command>& pipeline, ProcessMa
         int pipefd[2];
         if (i < numCmds - 1) {
             if (pipe(pipefd) == -1) {
+                perror("pipe");
                 return;
             }
         }
 
         pid_t pid = fork();
         if (pid < 0) {
+            perror("fork");
+            if (prevReadFd != -1) close(prevReadFd);
             return;
         }
 
@@ -55,14 +58,12 @@ void ProcessExecutor::executePipeline(const vector<Command>& pipeline, ProcessMa
             fullArgs.insert(fullArgs.end(), pipeline[i].args.begin(), pipeline[i].args.end());
 
             bool isHandled = handle_builtin(fullArgs);
-
             if (!isHandled) {
                 if (pipeline[i].program == "path" || pipeline[i].program == "pwd") {
                     PathManager::executeCommand(pipeline[i]);
                     isHandled = true;
                 }
             }
-
             if (!isHandled) {
                 if (pipeline[i].program == "ls" || pipeline[i].program == "dir" || pipeline[i].program == "mkdir" ||
                     pipeline[i].program == "rm" || pipeline[i].program == "mv" || pipeline[i].program == "cp" ||
@@ -71,7 +72,6 @@ void ProcessExecutor::executePipeline(const vector<Command>& pipeline, ProcessMa
                     isHandled = true;
                 }
             }
-
             if (!isHandled) {
                 isHandled = procManager.handleCommand(pipeline[i]);
             }
@@ -80,16 +80,10 @@ void ProcessExecutor::executePipeline(const vector<Command>& pipeline, ProcessMa
                 exit(EXIT_SUCCESS);
             }
 
-            vector<string> args;
-            args.push_back(pipeline[i].program);
-            for (const auto& arg : pipeline[i].args) {
-                args.push_back(arg);
-            }
-
             vector<char*> c_args;
-            for (auto& a : args) {
-                c_args.push_back(&a[0]);
-            }
+            vector<string> args = {pipeline[i].program};
+            args.insert(args.end(), pipeline[i].args.begin(), pipeline[i].args.end());
+            for (auto& a : args) c_args.push_back(&a[0]);
             c_args.push_back(nullptr);
 
             string executablePath = pipeline[i].program;
@@ -102,19 +96,20 @@ void ProcessExecutor::executePipeline(const vector<Command>& pipeline, ProcessMa
             }
 
             execvp(executablePath.c_str(), c_args.data());
+            perror("execvp");
             exit(EXIT_FAILURE);
         } else {
             pids.push_back(pid);
-
-            if (i > 0) {
-                close(prevReadFd);
-            }
-
+            if (i > 0) close(prevReadFd);
             if (i < numCmds - 1) {
                 close(pipefd[1]);
                 prevReadFd = pipefd[0];
             }
         }
+    }
+
+    if (prevReadFd != -1) {
+        close(prevReadFd);
     }
 
     if (isBackground) {

@@ -120,6 +120,19 @@ void ProcessManager::listProcesses() {
     cout << string(90, '=') << endl;
     
     for (auto it = bgProcesses.begin(); it != bgProcesses.end(); ) {
+        int status;
+        pid_t result = waitpid(it->pid, &status, WNOHANG);
+
+        if (result > 0) {
+            cout << setw(10) << left << it->pid
+                 << setw(40) << left << it->command
+                 << setw(20) << left << "N/A"
+                 << setw(20) << left << "Terminated (Reaped)" << endl;
+            ProcessHistory::updateEndTime(it->pid);
+            it = bgProcesses.erase(it);
+            continue;
+        }
+
         ProcInfo info;
         if (getProcInfo(it->pid, info)) {
             cout << setw(10) << left << it->pid
@@ -129,10 +142,6 @@ void ProcessManager::listProcesses() {
             it->isRunning = (info.state != 'Z' && info.state != 'X');
             ++it;
         } else {
-            cout << setw(10) << left << it->pid
-                 << setw(40) << left << it->command
-                 << setw(20) << left << "N/A"
-                 << setw(20) << left << "Terminated" << endl;
             ProcessHistory::updateEndTime(it->pid);
             it = bgProcesses.erase(it);
         }

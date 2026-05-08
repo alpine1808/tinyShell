@@ -18,7 +18,7 @@ namespace fs = std::filesystem;
 using namespace std;
 
 void processLine(const string& input, ProcessManager& procManager) {
-    if (input.empty()) return;
+    if (input.empty() || input[0] == '#') return;
 
     vector<Command> pipeline = CommandParser::parsePipeline(input, procManager);
     if (pipeline.empty()) return;

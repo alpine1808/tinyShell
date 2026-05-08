@@ -13,6 +13,10 @@ namespace Color {
 }
 
 void log(LogLevel level, const std::string& message) {
+    if (level == INFO || level == PROCESS) {
+        return;
+    }
+
     static bool needNewline = false;
     if (needNewline) {
         std::cerr << "\n"; 
@@ -20,9 +24,6 @@ void log(LogLevel level, const std::string& message) {
     }
     
     switch(level) {
-        case INFO:
-            std::cerr << Color::BOLD << Color::BLUE << "[INFO] " << Color::RESET;
-            break;
         case LOG_ERROR:
             std::cerr << Color::BOLD << Color::RED << "[ERROR] " << Color::RESET;
             break;
@@ -32,8 +33,7 @@ void log(LogLevel level, const std::string& message) {
         case SUCCESS:
             std::cerr << Color::BOLD << Color::GREEN << "[SUCCESS] " << Color::RESET;
             break;
-        case PROCESS:
-            std::cerr << Color::BOLD << Color::CYAN << "[PROCESS] " << Color::RESET;
+        default:
             break;
     }
 
